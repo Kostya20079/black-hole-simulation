@@ -51,11 +51,11 @@ def rk4_step(state: np.ndarray, dt: float) -> np.ndarray:
 
         Args:
             state: photon state vector [pos, vel]
-            dt: integration step siz
+            dt: integration step size
 
         Returns:
             new_state: updated [pos, vel] after dt
-        """
+    """
 
     k1 = derivatives(state)
     k2 = derivatives(state + 0.5 * dt * k1)

@@ -15,6 +15,10 @@ numba>=0.57
 2. ### File Overview
 ```text
 black-hole-simulator/
+├── plots
+    ├── 2d_photon_sisualization.png
+├── physics.py
+├── 2d_photon_visualization.py
 ├── README.md
 ├── requirements.txt
 ```
