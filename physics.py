@@ -1,4 +1,5 @@
 import numpy as np
+from numba import njit
 
 """
 Core geodesic engine
@@ -44,6 +45,24 @@ def derivatives(state: np.ndarray) -> np.ndarray:
 
     return np.concatenate([vel, accel])
 
+@njit(cache=True)
+def geodesic_accel(px, py, pz, vx, vy, vz):
+    """
+    Computes the geodesic acceleration components for a photon.
+    Returns (ax, ay, az).
+    """
+    # Cross product h = pos × vel
+    hx = py*vz - pz*vy
+    hy = pz*vx - px*vz
+    hz = px*vy - py*vx
+
+    h2 = hx*hx + hy*hy + hz*hz # |h|^2
+    r  = (px*px + py*py + pz*pz) ** 0.5 # |pos|
+    r5 = r * r * r * r * r
+
+    factor = -1.5 * RS * h2 / r5
+    return factor*px, factor*py, factor*pz
+
 
 def rk4_step(state: np.ndarray, dt: float) -> np.ndarray:
     """
@@ -63,3 +82,40 @@ def rk4_step(state: np.ndarray, dt: float) -> np.ndarray:
     k4 = derivatives(state + dt * k3)
 
     return state + (dt / 6.0) * (k1 + 2 * k2 + 2 * k3 + k4)
+
+@njit(cache=True)
+def rk4_step_nb(px, py, pz, vx, vy, vz, dt):
+    """
+    One RK4 step. Input and output are scalar components.
+    Returns (new_px, new_py, new_pz, new_vx, new_vy, new_vz).
+    """
+    # k1
+    k1vx, k1vy, k1vz = vx, vy, vz
+    k1ax, k1ay, k1az = geodesic_accel(px, py, pz, vx, vy, vz)
+
+    # k2
+    p2x = px + 0.5*dt*k1vx;  p2y = py + 0.5*dt*k1vy;  p2z = pz + 0.5*dt*k1vz
+    v2x = vx + 0.5*dt*k1ax;  v2y = vy + 0.5*dt*k1ay;  v2z = vz + 0.5*dt*k1az
+    k2vx, k2vy, k2vz = v2x, v2y, v2z
+    k2ax, k2ay, k2az = geodesic_accel(p2x, p2y, p2z, v2x, v2y, v2z)
+
+    # k3
+    p3x = px + 0.5*dt*k2vx;  p3y = py + 0.5*dt*k2vy;  p3z = pz + 0.5*dt*k2vz
+    v3x = vx + 0.5*dt*k2ax;  v3y = vy + 0.5*dt*k2ay;  v3z = vz + 0.5*dt*k2az
+    k3vx, k3vy, k3vz = v3x, v3y, v3z
+    k3ax, k3ay, k3az = geodesic_accel(p3x, p3y, p3z, v3x, v3y, v3z)
+
+    # k4
+    p4x = px + dt*k3vx;  p4y = py + dt*k3vy;  p4z = pz + dt*k3vz
+    v4x = vx + dt*k3ax;  v4y = vy + dt*k3ay;  v4z = vz + dt*k3az
+    k4ax, k4ay, k4az = geodesic_accel(p4x, p4y, p4z, v4x, v4y, v4z)
+
+    inv6 = dt / 6.0
+    new_px = px + inv6*(k1vx + 2*k2vx + 2*k3vx + (v4x))
+    new_py = py + inv6*(k1vy + 2*k2vy + 2*k3vy + (v4y))
+    new_pz = pz + inv6*(k1vz + 2*k2vz + 2*k3vz + (v4z))
+    new_vx = vx + inv6*(k1ax + 2*k2ax + 2*k3ax + k4ax)
+    new_vy = vy + inv6*(k1ay + 2*k2ay + 2*k3ay + k4ay)
+    new_vz = vz + inv6*(k1az + 2*k2az + 2*k3az + k4az)
+
+    return new_px, new_py, new_pz, new_vx, new_vy, new_vz
