@@ -119,3 +119,24 @@ def rk4_step_nb(px, py, pz, vx, vy, vz, dt):
     new_vz = vz + inv6*(k1az + 2*k2az + 2*k3az + k4az)
 
     return new_px, new_py, new_pz, new_vx, new_vy, new_vz
+
+# Adaptive step size helper
+@njit(cache=True, inline='always')
+def adaptive_dt(r, dt_base):
+    """
+    Scale dt by proximity to horizon.
+
+    Deep in the field (r ≈ Rs) -> tiny steps for accuracy.
+    Far from the BH -> large steps for speed.
+
+    Returns dt clamped to [dt_base*0.01, dt_base].
+    """
+    closeness = r / RS - 1.0
+    if closeness < 0.05:
+        closeness = 0.05
+    dt = dt_base * (closeness * 0.5)
+    if dt > dt_base:
+        dt = dt_base
+    if dt < dt_base*0.01:
+        dt = dt_base * 0.01
+    return dt
