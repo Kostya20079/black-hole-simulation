@@ -19,9 +19,11 @@ black-hole-simulator/
     ├── 2d_photon_visualization.png
     ├── camera_test.png
     ├── camera_test1.png
+    ├── hd_black_hole.png
 ├── physics.py
 ├── 2d_photon_visualization.py
 ├── camera_test.py
+├── hd_render.py
 ├── README.md
 ├── requirements.txt
 ```
