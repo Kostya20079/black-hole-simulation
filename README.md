@@ -16,10 +16,13 @@ numba>=0.57
 ```text
 black-hole-simulator/
 ├── plots
-    ├── 2d_photon_visualization.png
+    ├── photon_visualization_2d.png
     ├── camera_test.png
     ├── camera_test1.png
     ├── hd_black_hole.png
+├── app.py
+├── renderer2d_nb.py
+├── renderer3d_nb.py
 ├── physics.py
 ├── 2d_photon_visualization.py
 ├── camera_test.py
